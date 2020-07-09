@@ -1,19 +1,17 @@
 import 'source-map-support/register'
 import { APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult } from 'aws-lambda'
 import { UpdateTodoRequest } from '../../requests/UpdateTodoRequest'
-import * as AWS from 'aws-sdk'
 import { getUserId } from '../utils'
-
-const docClient = new AWS.DynamoDB.DocumentClient()
-const todosTable = process.env.TODOS_TABLE
+import { isTodoExist, updateTodo } from '../../businessLogic/todos'
+import { TodoItem } from '../../models/TodoItem'
 
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   console.log(`event -> ${JSON.stringify(event, null, 2)}`)
-  const todoId = event.pathParameters.todoId
+  const todoId: string = event.pathParameters.todoId
+  const userId: string = getUserId(event);
   console.log(`todoId -> ${todoId}`)
-
   const updatedTodo: UpdateTodoRequest = JSON.parse(event.body)
-  
+
   const isTodoAvailable = await isTodoExist(todoId)
   if (!isTodoAvailable) {
     return {
@@ -26,21 +24,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       })
     }
   }
-  const oldOne = await retrieveTodo(todoId);
-
-  const updatedItem = {
-    todoId: todoId,
-    userId: getUserId(event),
-    createdAt: oldOne.createdAt,
-    attachmentUrl: oldOne.attachmentUrl,
-    ...updatedTodo
-  }
-
-  await docClient.put({
-    TableName: todosTable,
-    Item: updatedItem
-  }).promise()
-
+  const updatedItem: TodoItem = await updateTodo(updatedTodo, todoId, userId);
   return {
     statusCode: 201,
     headers: {
@@ -50,28 +34,4 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       updatedItem
     })
   }
-}
-
-async function isTodoExist(todoId: string) {
-  const result = await docClient
-    .get({
-      TableName: todosTable,
-      Key: {
-        todoId: todoId
-      }
-    })
-    .promise()
-  return !!result.Item
-}
-
-async function retrieveTodo(todoId: string) {
-  const result = await docClient
-    .get({
-      TableName: todosTable,
-      Key: {
-        todoId: todoId
-      }
-    })
-    .promise()
-  return result.Item
 }

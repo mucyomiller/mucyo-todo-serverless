@@ -1,14 +1,13 @@
 import 'source-map-support/register'
 import { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler } from 'aws-lambda'
-import * as AWS from 'aws-sdk'
+import { isTodoExist, deleteTodo } from '../../businessLogic/todos'
 import { getUserId } from '../utils'
-
-const docClient = new AWS.DynamoDB.DocumentClient()
-const todosTable = process.env.TODOS_TABLE
 
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   console.log(`event -> ${JSON.stringify(event, null, 2)}`)
-  const todoId = event.pathParameters.todoId
+  const todoId: string = event.pathParameters.todoId
+  const userId: string = getUserId(event);
+
   console.log(`todoId -> ${todoId}`)
 
   const isValidTodo = await isTodoExist(todoId)
@@ -24,40 +23,25 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
     }
   }
 
-  const params = {
-    TableName: todosTable,
-    userId: getUserId(event),
-    Key: {
-      todoId: todoId
+  const deleted: Boolean = await deleteTodo(todoId, userId);
+  if (!deleted) {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        message: 'Oops Unexpected error happened while trying  to remove Todo'
+      })
     }
   }
-
-  let err: AWS.AWSError, data: AWS.DynamoDB.DocumentClient.DeleteItemOutput = await docClient.delete(params).promise()
-  if (err) {
-    console.error(` we were unable to delete this Todo ${JSON.stringify(err, null, 2)}`);
-  } else {
-    console.log(`Todo was deleted successfully ${JSON.stringify(data, null, 2)}`);
-  }
-
   return {
     statusCode: 201,
     headers: {
       'Access-Control-Allow-Origin': '*'
     },
     body: JSON.stringify({
-      message: 'Item successfully removed'
+      message: 'Successfully removed Todo'
     })
   }
-}
-
-async function isTodoExist(todoId: string) {
-  const result = await docClient
-    .get({
-      TableName: todosTable,
-      Key: {
-        todoId: todoId
-      }
-    })
-    .promise()
-  return !!result.Item
 }
