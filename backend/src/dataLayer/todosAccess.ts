@@ -3,12 +3,16 @@ import { CreateTodoRequest } from "../requests/CreateTodoRequest";
 import { UpdateTodoRequest } from "../requests/UpdateTodoRequest";
 import * as uuid from 'uuid'
 import * as AWS from 'aws-sdk'
+import * as AWSXRay from 'aws-xray-sdk'
+import { createLogger } from "../utils/logger";
 
 
+const XAWS = AWSXRay.captureAWS(AWS)
+const logger = createLogger('TodosAccess');
 
 export class TodosAccess {
     constructor(
-        private readonly docClient: AWS.DynamoDB.DocumentClient = new AWS.DynamoDB.DocumentClient(),
+        private readonly docClient: AWS.DynamoDB.DocumentClient = new XAWS.DynamoDB.DocumentClient(),
         private readonly s3: AWS.S3 = new AWS.S3({ signatureVersion: 'v4' }),
         private readonly todosTable = process.env.TODOS_TABLE,
         private readonly userIdIndex = process.env.USER_ID_INDEX
@@ -34,7 +38,7 @@ export class TodosAccess {
             userId,
             ...request
         }
-        this.docClient.put({
+        await this.docClient.put({
             TableName: this.todosTable,
             Item: createdTodo
         }).promise()
@@ -64,7 +68,9 @@ export class TodosAccess {
                 }
             })
             .promise()
-        return !!result.Item
+        const response = !!result.Item;
+        logger.debug(`assertion reponse -> ${response}`);
+        return response;
     }
 
     async updateTodo(updatedTodo: UpdateTodoRequest, todoId: string, userId: string): Promise<TodoItem> {

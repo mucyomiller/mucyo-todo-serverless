@@ -5,10 +5,22 @@ plugins:
   - serverless-webpack
   - serverless-iam-roles-per-function
   - serverless-reqvalidator-plugin
+  - serverless-aws-documentation
 
 provider:
   name: aws
   runtime: nodejs12.x
+
+  tracing:
+    lambda: true
+    apiGateway: true
+  iamRoleStatements:
+    - Effect: 'Allow'
+      Action:
+        - 'xray:PutTraceSegments'
+        - 'xray:PutTelemetryRecords'
+      Resource:
+        - '*'
 
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
@@ -18,6 +30,22 @@ provider:
     USER_ID_INDEX: UserIdIndex
     SIGNED_URL_EXPIRATION: 300 #5min
     S3_BUCKET: serverless-todo-mucyofred-${self:provider.stage}
+
+custom:
+
+  documentation:
+    api:
+      info:
+        version: v1.0.0
+        title: Mucyo Todo serverless API
+        description: Serverless API for managing your Todos
+    models:
+      - name: CreateTodoRequest
+        contentType: application/json
+        schema: ${file(models/create-todo-request.json)}
+      - name: UpdateTodoRequest
+        contentType: application/json
+        schema: ${file(models/update-todo-request.json)}
 
 functions:
   Auth:
@@ -54,6 +82,12 @@ functions:
           cors: true
           authorizer: Auth
           reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: create a new Todo
+            description: create a new Todo
+            requestModels:
+              'application/json': CreateTodoRequest
+
     iamRoleStatementsInherit: true
     iamRoleStatements:
       - Effect: Allow
@@ -71,6 +105,12 @@ functions:
           cors: true
           authorizer: Auth
           reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: update a existing Todo
+            description: update a existing Todo
+            requestModels:
+              'application/json': UpdateTodoRequest
+
     iamRoleStatementsInherit: true
     iamRoleStatements:
       - Effect: Allow
@@ -151,7 +191,7 @@ resources:
           - AttributeName: userId
             AttributeType: S
         KeySchema:
-          - AttributeName: todoId
+          - AttributeName: userId
             KeyType: HASH
         GlobalSecondaryIndexes:
           - IndexName: ${self:provider.environment.USER_ID_INDEX}
