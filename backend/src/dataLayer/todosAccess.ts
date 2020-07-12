@@ -47,24 +47,26 @@ export class TodosAccess {
     }
 
 
-    async getTodoById(id: string): Promise<TodoItem> {
+    async getTodoById(id: string, userId: string): Promise<TodoItem> {
         const result = await this.docClient
             .get({
                 TableName: this.todosTable,
                 Key: {
-                    todoId: id
+                    todoId: id,
+                    userId: userId
                 }
             })
             .promise()
         return result.Item as TodoItem
     }
 
-    async isTodoExist(id: string): Promise<Boolean> {
+    async isTodoExist(id: string, userId: string): Promise<Boolean> {
         const result = await this.docClient
             .get({
                 TableName: this.todosTable,
                 Key: {
-                    todoId: id
+                    todoId: id,
+                    userId: userId
                 }
             })
             .promise()
@@ -75,7 +77,7 @@ export class TodosAccess {
 
     async updateTodo(updatedTodo: UpdateTodoRequest, todoId: string, userId: string): Promise<TodoItem> {
 
-        const oldOne = await this.getTodoById(todoId);
+        const oldOne = await this.getTodoById(todoId, userId);
 
         const updatedItem = {
             todoId,
@@ -98,7 +100,8 @@ export class TodosAccess {
             TableName: this.todosTable,
             userId: userId,
             Key: {
-                todoId: todoId
+                todoId: todoId,
+                userId: userId
             }
         }
 
@@ -111,7 +114,7 @@ export class TodosAccess {
         return true;
     }
 
-    async getSignedURL(todoId: string): Promise<string> {
+    async getSignedURL(todoId: string, userId: string): Promise<string> {
 
         const BUCKET = process.env.S3_BUCKET
         const URL_EXP = process.env.SIGNED_URL_EXPIRATION
@@ -128,7 +131,7 @@ export class TodosAccess {
         // update existing image URL on current TODO
         const updateImageUrl = {
             TableName: this.todosTable,
-            Key: { "todoId": todoId },
+            Key: { "todoId": todoId, "userId": userId },
             UpdateExpression: "set attachmentUrl = :a",
             ExpressionAttributeValues: {
                 ":a": imageUrl

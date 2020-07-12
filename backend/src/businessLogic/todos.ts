@@ -18,12 +18,12 @@ export async function deleteTodo(todoId: string, userId: string): Promise<Boolea
     return await todoAccess.deleteTodoById(todoId, userId);
 }
 
-export async function isTodoExist(todoId: string): Promise<Boolean> {
-    return await todoAccess.isTodoExist(todoId);
+export async function isTodoExist(todoId: string, userId: string): Promise<Boolean> {
+    return await todoAccess.isTodoExist(todoId, userId);
 }
 
-export async function getSignedURL(todoId: string): Promise<string> {
-    return await todoAccess.getSignedURL(todoId);
+export async function getSignedURL(todoId: string, userId: string): Promise<string> {
+    return await todoAccess.getSignedURL(todoId, userId);
 }
 export async function updateTodo(updatedTodo: UpdateTodoRequest, todoId: string, userId: string): Promise<TodoItem> {
     return await todoAccess.updateTodo(updatedTodo, todoId, userId);

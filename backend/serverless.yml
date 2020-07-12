@@ -26,13 +26,12 @@ provider:
   region: ${opt:region, 'us-east-1'}
 
   environment:
-    TODOS_TABLE: Todos-${self:provider.stage}
+    TODOS_TABLE: Todos-miller-${self:provider.stage}
     USER_ID_INDEX: UserIdIndex
     SIGNED_URL_EXPIRATION: 300 #5min
     S3_BUCKET: serverless-todo-mucyofred-${self:provider.stage}
 
 custom:
-
   documentation:
     api:
       info:
@@ -193,6 +192,8 @@ resources:
         KeySchema:
           - AttributeName: userId
             KeyType: HASH
+          - AttributeName: todoId
+            KeyType: RANGE
         GlobalSecondaryIndexes:
           - IndexName: ${self:provider.environment.USER_ID_INDEX}
             KeySchema:

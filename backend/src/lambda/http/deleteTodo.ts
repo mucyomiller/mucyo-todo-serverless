@@ -10,7 +10,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
 
   console.log(`todoId -> ${todoId}`)
 
-  const isValidTodo = await isTodoExist(todoId)
+  const isValidTodo = await isTodoExist(todoId, userId)
   if (!isValidTodo) {
     return {
       statusCode: 404,

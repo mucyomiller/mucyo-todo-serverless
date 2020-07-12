@@ -14,7 +14,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   logger.info(`todoId -> ${todoId}`);
   const updatedTodo: UpdateTodoRequest = JSON.parse(event.body)
 
-  const isTodoAvailable = await isTodoExist(todoId);
+  const isTodoAvailable = await isTodoExist(todoId, userId);
   logger.info(`is Todo available -> ${isTodoAvailable}`);
   if (!isTodoAvailable) {
     return {
